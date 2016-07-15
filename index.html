@@ -1,11 +1,15 @@
-<!DOCTYPE html>
 <html>
   <head>
     <title>Overt Streams</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="https://bootswatch.com/yeti/bootstrap.min.css">
     <script type="text/javascript" src="https://rawgit.com/theadam/snipplets/gh-pages/dist/snipplets.min.js"></script>
-    <script type="text/javascript" src="http://localhost:3000/dist/overt.js"></script>
+    <script type="text/javascript" src="dist/overt.js"></script>
+    <style type="text/css">
+      .CodeMirror {
+        height: 200px;
+      }
+    </style>
   </head>
   <body>
     <div class="navbar navbar-default navbar-fixed-top">
@@ -18,8 +22,18 @@
       </div>
     </div>
 
-    <textarea class="snipplet-responder" data-deps="http://localhost:3000/dist/overt.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react-dom.js" id="default">
-      const css = `.timeline{width:100%;border:1px solid gray;position:relative;overflow:hidden;height:100px}.timeline .name{position:absolute;top:0;left:0;color:gray;font-family:sans-serif;padding:2px 5px;font-weight:400;font-size:12px;border-bottom:1px solid gray;border-right:1px solid gray}.timeline .line{position:absolute;background-color:#000;top:50%;left:0;right:0;height:2px}.timeline .ball-wrapper{height:100%;width:100%;position:absolute}.timeline .ball-wrapper .ball{background-color:#ff6946;position:absolute;transform:translateY(-50%);top:50%;width:50px;height:50px;border-radius:100px;border:2px solid #000;text-align:center;line-height:50px;font-weight:700;font-family:sans-serif}`;
+    <textarea class="snipplet-responder" data-deps="dist/overt.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react-dom.js" id="default">
+      Object.keys(overt).forEach(key => {
+        window[key] = overt[key];
+      });
+      window.stream = repeat(1, 1000)::share();
+      window.events = type => (cb => {
+        const handler = e => cb(e);
+        document.addEventListener(type, handler);
+        return () => document.removeEventListener(type, handler);
+      })::share();
+
+      const css = `.timeline:last-child{border-bottom:0;}.timeline{width:100%;border-bottom:1px solid gray;position:relative;overflow:hidden;height:100px}.timeline .name{position:absolute;top:0;left:0;color:gray;font-family:sans-serif;padding:2px 5px;font-weight:400;font-size:12px;border-bottom:1px solid gray;border-right:1px solid gray}.timeline .line{position:absolute;background-color:#000;top:50%;left:0;right:0;height:2px}.timeline .ball-wrapper{height:100%;width:100%;position:absolute}.timeline .ball-wrapper .ball{background-color:#ff6946;position:absolute;transform:translateY(-50%);top:50%;width:50px;height:50px;border-radius:100px;border:2px solid #000;text-align:center;line-height:50px;font-weight:700;font-family:sans-serif}`;
       const head = document.head || document.getElementsByTagName('head')[0];
       const style = document.createElement('style');
       style.type = 'text/css';
@@ -72,7 +86,7 @@
 
       class Timeline extends Component {
         handleStream = value => {
-          const event = { key: this._id++, value, time: performance.now() };
+          const event = { key: this._id++, value, offset: Math.random(), time: performance.now() };
           this._events = [
             event,
             ...this._events.slice(0, 15),
@@ -93,13 +107,13 @@
               return 100 - ((this.props.time - time) / 50);
         }
 
-        y(x) {
-          return 4 * Math.sin(x/4);
+        y(x, offset) {
+          return 2 * Math.sin(offset * x/4);
         }
 
-        transform(time) {
+        transform(time, offset) {
           const x = this.x(time);
-          const y = this.y(x);
+          const y = this.y(x, offset);
           return `translate(${x}%, ${y}%)`;
         }
 
@@ -112,8 +126,8 @@
                 </div>
               }
               <div className="line" />
-              {this._events.map(({key, value, time}) =>
-                <div key={key} className="ball-wrapper" style={{ transform: this.transform(time) }}>
+              {this._events.map(({key, value, time, offset}) =>
+                <div key={key} className="ball-wrapper" style={{ transform: this.transform(time, offset) }}>
                   <div className="ball">
                     {value}
                   </div>
@@ -129,15 +143,14 @@
       })
     </textarea>
 
-    <textarea class="snipplet">
-const { repeat, map, delay, share } = overt;
-const stream = repeat(1, 1000)::share();
-const mapped = stream::map(x => x + 1);
+    <textarea class="snipplet larger">
+const oneClicks = events('click')
+  ::concat(events('touchend'))
+  ::map(e => 1);
 
 ({
-  Values: stream,
-  'Values + 1': mapped,
-  'Values + 1 and delayed': mapped::delay(100),
+  Values: oneClicks,
+  Counter: oneClicks::scan(0, (state, action) => state + action),
 });
     </textarea>
   </body>
