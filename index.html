@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Overt Streams</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="https://bootswatch.com/yeti/bootstrap.min.css">
+    <script type="text/javascript" src="https://rawgit.com/theadam/snipplets/gh-pages/dist/snipplets.min.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/dist/overt.js"></script>
+  </head>
+  <body>
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <div class="navbar-brand">
+            Overt Streams
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <textarea class="snipplet-responder" data-deps="http://localhost:3000/dist/overt.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react.js,https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react-dom.js" id="default">
+      const css = `.timeline{width:100%;border:1px solid gray;position:relative;overflow:hidden;height:100px}.timeline .name{position:absolute;top:0;left:0;color:gray;font-family:sans-serif;padding:2px 5px;font-weight:400;font-size:12px;border-bottom:1px solid gray;border-right:1px solid gray}.timeline .line{position:absolute;background-color:#000;top:50%;left:0;right:0;height:2px}.timeline .ball-wrapper{height:100%;width:100%;position:absolute}.timeline .ball-wrapper .ball{background-color:#ff6946;position:absolute;transform:translateY(-50%);top:50%;width:50px;height:50px;border-radius:100px;border:2px solid #000;text-align:center;line-height:50px;font-weight:700;font-family:sans-serif}`;
+      const head = document.head || document.getElementsByTagName('head')[0];
+      const style = document.createElement('style');
+      style.type = 'text/css';
+      if (style.styleSheet){
+        style.styleSheet.cssText = css;
+      } else {
+        style.appendChild(document.createTextNode(css));
+      }
+      head.appendChild(style);
+
+      const { Component } = React;
+
+      class Timelines extends Component {
+        componentWillMount() {
+          const { streams } = this.props;
+          const streamArray = Object.keys(streams).map(key => (
+            {name: key, stream: streams[key] }
+          ));
+          this.setState({ streams: streamArray });
+          this._lastUpdate = 0;
+          this.scheduleUpdate();
+        }
+
+        componentWillUnmount() {
+          cancelAnimationFrame(this._id);
+        }
+
+        scheduleUpdate = () => {
+          this._id = requestAnimationFrame(this.rerender);
+        }
+
+        rerender = (t) => {
+          if (t - this._lastUpdate < 16) return this.scheduleUpdate();
+          this._lastUpdate = t;
+          this.forceUpdate();
+          this.scheduleUpdate();
+        }
+
+        render() {
+          const { streams } = this.state;
+          return (
+            <div>
+              {streams.map(({name, stream}) =>
+                <Timeline key={name} name={name} stream={stream} time={this._lastUpdate} />
+              )}
+            </div>
+          );
+        }
+      }
+
+      class Timeline extends Component {
+        handleStream = value => {
+          const event = { key: this._id++, value, time: performance.now() };
+          this._events = [
+            event,
+            ...this._events.slice(0, 15),
+          ];
+        }
+
+        componentWillMount() {
+          this._id = 0;
+          this._events = [];
+              this._unsubscribe = this.props.stream(this.handleStream);
+        }
+
+        componentWillUnmount() {
+              this._unsubscribe();
+        }
+
+        x(time) {
+              return 100 - ((this.props.time - time) / 50);
+        }
+
+        y(x) {
+          return 4 * Math.sin(x/4);
+        }
+
+        transform(time) {
+          const x = this.x(time);
+          const y = this.y(x);
+          return `translate(${x}%, ${y}%)`;
+        }
+
+        render() {
+          return (
+            <div className="timeline">
+              {this.props.name !== undefined &&
+                <div className="name">
+                  {this.props.name}
+                </div>
+              }
+              <div className="line" />
+              {this._events.map(({key, value, time}) =>
+                <div key={key} className="ball-wrapper" style={{ transform: this.transform(time) }}>
+                  <div className="ball">
+                    {value}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+      }
+
+      (function(getResult, el, code) {
+        ReactDOM.render(<Timelines streams={getResult()} />, el);
+      })
+    </textarea>
+
+    <textarea class="snipplet">
+const { repeat, map, delay, share } = overt;
+const stream = repeat(1, 1000)::share();
+const mapped = stream::map(x => x + 1);
+
+({
+  Values: stream,
+  'Values + 1': mapped,
+  'Values + 1 and delayed': mapped::delay(100),
+});
+    </textarea>
+  </body>
+</html>
