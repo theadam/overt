@@ -11,7 +11,7 @@
   "scripts": {
     "clean": "rimraf lib dist",
     "build:lib": "babel src --loose --out-dir lib",
-    "build:umd": "webpack src/index.js dist/overt.js --display-modules --progress && NODE_ENV=production webpack src/index.js dist/overt.min.js --display-modules --progress",
+    "build:umd": "webpack --display-modules --progress && NODE_ENV=production webpack --display-modules --progress",
     "build": "npm run build:lib && npm run build:umd",
     "lint": "eslint src",
     "prepublish": "npm run clean && npm run build",
@@ -30,6 +30,7 @@
     "babel-eslint": "^6.1.0",
     "babel-loader": "^6.2.4",
     "babel-preset-es2015": "^6.9.0",
+    "babel-preset-react": "^6.11.1",
     "babel-preset-stage-0": "^6.5.0",
     "babel-register": "^6.9.0",
     "chai": "^3.5.0",

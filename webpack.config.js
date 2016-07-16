@@ -1,5 +1,5 @@
 'use strict';
-
+var path = require('path');
 var webpack = require('webpack');
 
 var plugins = [
@@ -9,7 +9,9 @@ var plugins = [
   new webpack.optimize.OccurenceOrderPlugin()
 ];
 
+let name = '[name].js';
 if (process.env.NODE_ENV === 'production') {
+  name = '[name].min.js';
   plugins.push(
     new webpack.optimize.UglifyJsPlugin({
       compressor: {
@@ -26,14 +28,18 @@ module.exports = {
       {test: /\.js$/, loaders: ['babel-loader'], exclude: /node_modules/}
     ]
   },
-  entry: [
-    __dirname + '/src/index'
-  ],
+  entry: {
+    overt: __dirname + '/src/index',
+    streamline: __dirname + '/src/timelines/index',
+  },
   output: {
-    library: 'overt',
-    libraryTarget: 'umd'
+    library: '[name]',
+    libraryTarget: 'umd',
+    filename: name,
+    path: path.join(__dirname, 'dist'),
   },
   externals: {
+    react: 'React',
   },
   plugins: plugins,
   resolve: {
