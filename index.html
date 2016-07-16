@@ -37,6 +37,7 @@
       })::share();
 
       (function(getResult, el, code) {
+        ReactDOM.unmountComponentAtNode(el);
         ReactDOM.render(<Timelines streams={getResult()} />, el);
       })
     </textarea>
